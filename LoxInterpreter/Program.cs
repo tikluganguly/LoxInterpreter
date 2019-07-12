@@ -7,6 +7,8 @@ namespace LoxInterpreter
 {
     class Program
     {
+        private static bool hadError;
+
         static void Main(string[] args)
         {
             if (args.Length > 1)
@@ -27,6 +29,7 @@ namespace LoxInterpreter
         private static async Task RunFile(string file)
         {
             Run(await File.ReadAllTextAsync(file));
+            if (hadError) return;
         }
 
         private static void RunPrompt()
@@ -35,6 +38,7 @@ namespace LoxInterpreter
             {
                 Console.Write("> ");
                 Run(Console.ReadLine());
+                hadError = false;
             }
         }
 
@@ -45,6 +49,17 @@ namespace LoxInterpreter
             {
                 Console.WriteLine(token.ToString());
             }
+        }
+
+        static void Error(int line,string message)
+        {
+            Report(line, "", message);
+        }
+
+        static void Report(int line,string where,string message)
+        {
+            Console.WriteLine($"[line {line}] Error {where} : {message}");
+            hadError = true;
         }
     }
 }
