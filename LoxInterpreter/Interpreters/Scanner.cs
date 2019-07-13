@@ -32,6 +32,10 @@ namespace LoxInterpreter.Interpreters
             return current >= source.Length;
         }
 
+        /// <summary>
+        /// We move one character at a time via the source code
+        /// and try to do a pattern maching with the character
+        /// </summary>
         private void ScanToken()
         {
             char c = Advance();
@@ -104,16 +108,78 @@ namespace LoxInterpreter.Interpreters
                     //new line
                     line++;
                     break;
+                case '"':
+                    String();
+                    break;
                 default:
-                    Program.Error(line, $"Unexpected Character {c}");
+                    if (IsDigit(c))
+                    {
+                        Number();
+                    }
+                    else
+                    {
+                        Program.Error(line, $"Unexpected Character {c}");
+                    }
                     break;
             }
+        }
+
+        /// <summary>
+        /// numbers can be 12.34, .1234 or 1234
+        /// </summary>
+        private void Number()
+        {
+            //go one char at a time if we are getting numbers
+            while (IsDigit(Peek())) Advance();
+
+            //for fraction
+            if(Peek()=='.' && IsDigit(PeekNext()))
+            {
+                Advance();
+                while (IsDigit(Peek())) Advance();
+            }
+            AddToken(TokenType.NUMBER, double.Parse(source.Substring(start, current)));
+        }
+
+        private void String()
+        {
+            //go one char at a time till we find the closing " for a string literal
+            while(Peek() != '"' && !IsAtEnd())
+            {
+                if (Peek() == '\n') line++; //lox supports multiline text
+                Advance();
+            }
+
+            //unterminated text
+            if (IsAtEnd())
+            {
+                Program.Error(line, "Unterminated Text");
+                return;
+            }
+
+            //the closing "
+            Advance();
+
+            //trim the saraounding quotes in a text literal
+            var value = source.Substring(start + 1, current - 1);
+            AddToken(TokenType.STRING, value);
         }
 
         private char Peek()
         {
             if (IsAtEnd()) return '\0';
             return source[current];
+        }
+
+        private char PeekNext()
+        {
+            if (current + 1 >= source.Length) return '\0';
+            return source[current + 1];
+        }
+
+        private bool IsDigit(char c)
+        {
+            return c >= '0' && c <= '9';
         }
 
         private bool Match(char expected)
